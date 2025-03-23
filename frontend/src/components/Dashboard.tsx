@@ -7,6 +7,7 @@ import CompanySelector from './CompanySelector';
 import TaskMetricsTable from './TaskMetricsTable';
 import CapacityUsageChart from './CapacityUsageChart';
 import LeavesChart from './LeavesChart';
+import LeavesChartV2 from './LeavesChartV2';
 import { fetchLeavesData } from '../services/api';
 import { LeaveData } from '../types/project';
 
@@ -88,7 +89,7 @@ const Dashboard: React.FC = () => {
 
   // Cargar datos de licencias cuando se selecciona la pestaña o cambia la compañía
   useEffect(() => {
-    if (tabValue === 4) { // Si la pestaña de licencias está activa
+    if (tabValue === 4 || tabValue === 5) { // Si alguna pestaña de licencias está activa
       loadLeavesData(selectedCompany);
     }
   }, [tabValue, selectedCompany]);
@@ -113,6 +114,7 @@ const Dashboard: React.FC = () => {
           <Tab label="Task Metrics" />
           <Tab label="Capacity Usage" />
           <Tab label="Leaves" />
+          <Tab label="Leaves V2" />
         </Tabs>
       </Box>
       
@@ -186,6 +188,34 @@ const Dashboard: React.FC = () => {
             </Paper>
           ) : (
             <LeavesChart leavesData={leavesData} isLoading={isLoadingLeaves} />
+          )}
+        </Paper>
+      </TabPanel>
+      
+      <TabPanel value={tabValue} index={5}>
+        <Paper elevation={2}>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Licencias V2 - Visualización Simplificada
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Análisis de licencias con filtros mejorados y visualización optimizada
+            </Typography>
+          </Box>
+          {leavesError ? (
+            <Paper sx={{ p: 2, mb: 2, textAlign: 'center', color: 'error.main' }}>
+              <Typography variant="h6">{leavesError}</Typography>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => loadLeavesData(selectedCompany)} 
+                sx={{ mt: 2 }}
+              >
+                Reintentar
+              </Button>
+            </Paper>
+          ) : (
+            <LeavesChartV2 leavesData={leavesData} isLoading={isLoadingLeaves} />
           )}
         </Paper>
       </TabPanel>
