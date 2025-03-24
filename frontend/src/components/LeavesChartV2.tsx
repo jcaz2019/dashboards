@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Box, Typography, CircularProgress, Paper, Grid, FormControl,
-  InputLabel, Select, MenuItem, SelectChangeEvent, Divider, Chip
+  InputLabel, Select, MenuItem, SelectChangeEvent, Divider, Chip, Button, Collapse, TableContainer, Table, TableHead, TableBody, TableRow, TableCell
 } from '@mui/material';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -80,6 +80,7 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
   const [endMonth, setEndMonth] = useState<string>('');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<string>('all');
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   
   // Extraer meses, usuarios y proyectos únicos para los filtros
   const { months, users, projects } = useMemo(() => {
@@ -376,92 +377,347 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
     };
   }, [filteredData]);
   
-  // Procesar datos para el gráfico de licencias por usuario por mes
-  const userMonthLeavesData = useMemo(() => {
-    // Agrupar por usuario y mes
-    const userMonthMap = new Map<string, Map<string, {
-      leaveDays: Set<number>;
-      reservedHours: number;
-    }>>();
+  // Función para alternar la expansión de las tarjetas
+  const toggleCardExpansion = (user: string, month: string) => {
+    const key = `${user}-${month}`;
+    const newExpandedCards = new Set(expandedCards);
     
-    // Preparar los datos
-    filteredData.forEach(item => {
-      const userId = item.user_id.toString();
-      const userName = item.user_name;
-      const month = item.month;
-      const leaveDays = parseLeaveDays(item.licencias);
-      const reservedHours = Number(item.reserved_hours) || 0;
+    if (newExpandedCards.has(key)) {
+      newExpandedCards.delete(key);
+    } else {
+      newExpandedCards.add(key);
+    }
+    
+    setExpandedCards(newExpandedCards);
+  };
+  
+  // Componente para mostrar un calendario visual de licencias
+  const LeavesCalendar = ({ filteredData }: { filteredData: LeaveData[] }) => {
+    // Estado para controlar qué filas están expandidas
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    // Estado para controlar qué usuarios tienen detalles de proyectos expandidos
+    const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+    
+    // Función para alternar la expansión de una fila
+    const toggleRowExpansion = (userId: string, month: string) => {
+      const key = `${userId}-${month}`;
+      const newExpandedRows = new Set(expandedRows);
       
-      if (leaveDays.length === 0) return;
-      
-      // Inicializar mapa para el usuario si no existe
-      if (!userMonthMap.has(userName)) {
-        userMonthMap.set(userName, new Map());
+      if (newExpandedRows.has(key)) {
+        newExpandedRows.delete(key);
+      } else {
+        newExpandedRows.add(key);
       }
       
-      // Obtener el mapa de meses para este usuario
-      const monthMap = userMonthMap.get(userName)!;
+      setExpandedRows(newExpandedRows);
+    };
+    
+    // Función para alternar la expansión de los detalles de proyectos
+    const toggleProjectsExpansion = (userId: string, month: string, event: React.MouseEvent) => {
+      event.stopPropagation(); // Evitar que se propague al clic de la fila
       
-      // Inicializar datos para este mes si no existe
-      if (!monthMap.has(month)) {
-        monthMap.set(month, {
-          leaveDays: new Set<number>(),
-          reservedHours: 0
-        });
+      const key = `${userId}-${month}-projects`;
+      const newExpandedProjects = new Set(expandedProjects);
+      
+      if (newExpandedProjects.has(key)) {
+        newExpandedProjects.delete(key);
+      } else {
+        newExpandedProjects.add(key);
       }
       
-      // Actualizar datos para este usuario/mes
-      const monthData = monthMap.get(month)!;
-      leaveDays.forEach(day => monthData.leaveDays.add(day));
-      monthData.reservedHours += reservedHours;
-    });
+      setExpandedProjects(newExpandedProjects);
+    };
     
-    // Convertir a formato para el gráfico
-    const result: {
-      user: string;
-      month: string;
-      formattedMonth: string;
-      leaveDays: number;
-      reservedHours: number;
-    }[] = [];
+    // Función para expandir/colapsar todos los usuarios de un mes
+    const toggleAllUsersInMonth = (month: string, users: UserData[]) => {
+      const newExpandedRows = new Set(expandedRows);
+      
+      // Verificar si todos los usuarios del mes están expandidos
+      const allExpanded = users.every(user => 
+        newExpandedRows.has(`${user.userId}-${month}`)
+      );
+      
+      // Si todos están expandidos, colapsar todos; de lo contrario, expandir todos
+      users.forEach(user => {
+        const key = `${user.userId}-${month}`;
+        if (allExpanded) {
+          newExpandedRows.delete(key);
+        } else {
+          newExpandedRows.add(key);
+        }
+      });
+      
+      setExpandedRows(newExpandedRows);
+    };
     
-    // Convertir mapa anidado a array plano
-    userMonthMap.forEach((monthMap, userName) => {
-      monthMap.forEach((data, month) => {
-        let monthFormatted = month;
+    // Función para expandir/colapsar todos los proyectos de un mes
+    const toggleAllProjectsInMonth = (month: string, users: UserData[]) => {
+      const newExpandedProjects = new Set(expandedProjects);
+      
+      // Verificar si todos los proyectos del mes están expandidos
+      const allProjectsExpanded = users.every(user => 
+        newExpandedProjects.has(`${user.userId}-${month}-projects`)
+      );
+      
+      // Si todos están expandidos, colapsar todos; de lo contrario, expandir todos
+      users.forEach(user => {
+        const key = `${user.userId}-${month}-projects`;
+        if (allProjectsExpanded) {
+          newExpandedProjects.delete(key);
+        } else {
+          newExpandedProjects.add(key);
+        }
+      });
+      
+      setExpandedProjects(newExpandedProjects);
+    };
+    
+    // Agrupar datos por mes y usuario
+    const calendarData = useMemo(() => {
+      // Definir tipos explícitos para los mapas
+      const monthUserMap = new Map<string, Map<string, {
+        userId: string | number,
+        userName: string,
+        days: Set<number>,
+        ranges: Set<string>, // Usar Set para evitar duplicados
+        projects: Map<string, number> // Mapa de proyectos a horas reservadas
+      }>>();
+      
+      // Primero, crear un mapa para rastrear las horas ya contabilizadas por usuario/proyecto/mes
+      const processedHours = new Map<string, Map<string, Map<string, boolean>>>();
+      
+      filteredData.forEach(item => {
+        const month = item.month;
+        const userName = item.user_name;
+        const userId = item.user_id.toString();
+        const leaveDays = parseLeaveDays(item.licencias);
+        const ranges = item.licencias; // Guardar los rangos originales
+        const projectName = item.project_name;
+        const projectId = item.project_id.toString();
+        const reservedHours = Number(item.reserved_hours) || 0;
         
-        // Formatear el mes si es posible
-        if (month.includes('T')) {
-          try {
-            const date = new Date(month);
-            if (!isNaN(date.getTime())) {
-              const year = date.getFullYear();
-              const monthNum = String(date.getMonth() + 1).padStart(2, '0');
-              monthFormatted = `${year}-${monthNum}`;
-            }
-          } catch (e) {
-            console.error('Error formatting month:', e);
-          }
+        if (leaveDays.length === 0) return;
+        
+        // Inicializar el mapa de procesamiento si es necesario
+        if (!processedHours.has(userId)) {
+          processedHours.set(userId, new Map());
+        }
+        const userProcessed = processedHours.get(userId)!;
+        
+        if (!userProcessed.has(month)) {
+          userProcessed.set(month, new Map());
+        }
+        const monthProcessed = userProcessed.get(month)!;
+        
+        // Verificar si ya hemos procesado este proyecto para este usuario y mes
+        const projectKey = `${projectId}-${projectName}`;
+        if (monthProcessed.has(projectKey)) {
+          // Ya hemos contabilizado las horas para este proyecto, usuario y mes
+          return;
         }
         
-        result.push({
-          user: userName,
-          month: monthFormatted,
-          formattedMonth: formatMonth(month),
-          leaveDays: data.leaveDays.size,
-          reservedHours: data.reservedHours
-        });
+        // Marcar como procesado
+        monthProcessed.set(projectKey, true);
+        
+        // Ahora, actualizar los datos del calendario
+        if (!monthUserMap.has(month)) {
+          monthUserMap.set(month, new Map());
+        }
+        
+        const userMap = monthUserMap.get(month)!;
+        if (!userMap.has(userName)) {
+          userMap.set(userName, {
+            userId,
+            userName,
+            days: new Set<number>(),
+            ranges: new Set<string>(),
+            projects: new Map<string, number>()
+          });
+        }
+        
+        const userData = userMap.get(userName)!;
+        leaveDays.forEach(day => userData.days.add(day));
+        
+        if (ranges) {
+          userData.ranges.add(ranges);
+        }
+        
+        // Añadir las horas del proyecto (ahora solo una vez por proyecto/usuario/mes)
+        if (projectName) {
+          userData.projects.set(projectName, reservedHours);
+        }
       });
-    });
+      
+      // Convertir a formato para renderizar con tipos explícitos
+      return Array.from(monthUserMap.entries()).map(([month, userMap]) => ({
+        month,
+        users: Array.from(userMap.values()).map(userData => ({
+          ...userData,
+          days: Array.from(userData.days).sort((a: number, b: number) => a - b),
+          ranges: Array.from(userData.ranges).join(', '),
+          projects: Array.from(userData.projects.entries())
+            .map(([projectName, hours]) => ({ projectName, hours }))
+            .sort((a, b) => b.hours - a.hours)
+        }))
+      })).sort((a, b) => a.month.localeCompare(b.month));
+    }, [filteredData]);
     
-    // Ordenar por usuario y mes
-    return result.sort((a, b) => {
-      if (a.user !== b.user) {
-        return a.user.localeCompare(b.user);
-      }
-      return a.month.localeCompare(b.month);
-    });
-  }, [filteredData]);
+    if (calendarData.length === 0) {
+      return <Typography>No hay datos de licencias para mostrar</Typography>;
+    }
+    
+    // Definir un tipo para los datos de usuario
+    type UserData = {
+      userId: string | number;
+      userName: string;
+      days: number[];
+      ranges: string;
+      projects: { projectName: string; hours: number }[];
+    };
+    
+    return (
+      <Box sx={{ overflowX: 'auto' }}>
+        <Box sx={{ display: 'flex', minWidth: calendarData.length * 400 }}>
+          {calendarData.map(monthData => {
+            const allUsersExpanded = monthData.users.every(user => 
+              expandedRows.has(`${user.userId}-${monthData.month}`)
+            );
+            
+            return (
+              <Box key={monthData.month} sx={{ flex: '0 0 auto', width: 400, mr: 2, border: '1px solid #ddd', borderRadius: 1, p: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    {formatMonth(monthData.month)}
+                  </Typography>
+                </Box>
+                
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>Usuario</th>
+                      <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                        Días de licencia
+                      </th>
+                      <th style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #ddd', width: '80px' }}>
+                        Proyectos
+                        <button 
+                          onClick={() => {
+                            // Si hay al menos un proyecto expandido, colapsar todos
+                            if ([...expandedProjects].some(key => key.includes(`-${monthData.month}-projects`))) {
+                              // Filtrar para quitar todos los proyectos de este mes
+                              const newExpandedProjects = new Set([...expandedProjects].filter(
+                                key => !key.includes(`-${monthData.month}-projects`)
+                              ));
+                              setExpandedProjects(newExpandedProjects);
+                            } else {
+                              // Si no hay ninguno expandido, expandir todos (comportamiento original)
+                              toggleAllProjectsInMonth(monthData.month, monthData.users);
+                            }
+                          }}
+                          style={{ 
+                            background: 'none', 
+                            border: 'none',
+                            cursor: 'pointer',
+                            marginLeft: '8px',
+                            fontSize: '16px',
+                            color: '#1976d2'
+                          }}
+                        >
+                          {[...expandedProjects].some(key => key.includes(`-${monthData.month}-projects`)) ? '−' : '+'}
+                        </button>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthData.users.map((userData: UserData) => {
+                      const rowKey = `${userData.userId}-${monthData.month}`;
+                      const isExpanded = expandedRows.has(rowKey);
+                      const projectsKey = `${userData.userId}-${monthData.month}-projects`;
+                      const areProjectsExpanded = expandedProjects.has(projectsKey);
+                      
+                      return (
+                        <React.Fragment key={rowKey}>
+                          <tr 
+                            style={{ backgroundColor: '#f9f9f9' }}
+                          >
+                            <td style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                              {userData.userName}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>
+                              {userData.ranges || `${userData.days.length} días`}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #ddd' }}>
+                              <button 
+                                onClick={(e) => toggleProjectsExpansion(userData.userId.toString(), monthData.month, e)}
+                                style={{ 
+                                  background: 'none', 
+                                  border: 'none', 
+                                  cursor: 'pointer',
+                                  color: '#1976d2'
+                                }}
+                              >
+                                {areProjectsExpanded ? 'Ocultar' : 'Proyectos'}
+                              </button>
+                            </td>
+                          </tr>
+                          
+                          {/* Detalles de proyectos */}
+                          {areProjectsExpanded && (
+                            <tr>
+                              <td colSpan={3} style={{ padding: 0, borderBottom: '1px solid #ddd' }}>
+                                <Box sx={{ p: 1, backgroundColor: '#e3f2fd' }}>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    Proyectos y horas reservadas:
+                                  </Typography>
+                                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                      <tr>
+                                        <th style={{ padding: '4px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '0.875rem' }}>Proyecto</th>
+                                        <th style={{ padding: '4px', textAlign: 'right', borderBottom: '1px solid #ccc', fontSize: '0.875rem' }}>Horas</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {userData.projects.map((project, idx) => (
+                                        <tr key={idx} style={{ 
+                                          backgroundColor: project.hours > 0 ? '#e8f5e9' : 'transparent',
+                                          fontWeight: project.hours > 0 ? 'bold' : 'normal'
+                                        }}>
+                                          <td style={{ padding: '4px', textAlign: 'left', borderBottom: '1px solid #ccc', fontSize: '0.875rem' }}>
+                                            {project.projectName}
+                                          </td>
+                                          <td style={{ padding: '4px', textAlign: 'right', borderBottom: '1px solid #ccc', fontSize: '0.875rem' }}>
+                                            {safeNumberFormatter(project.hours)}
+                                          </td>
+                                        </tr>
+                                      ))}
+                                      <tr style={{ fontWeight: 'bold' }}>
+                                        <td style={{ padding: '4px', textAlign: 'left', borderTop: '2px solid #ccc', fontSize: '0.875rem' }}>
+                                          Total
+                                        </td>
+                                        <td style={{ padding: '4px', textAlign: 'right', borderTop: '2px solid #ccc', fontSize: '0.875rem' }}>
+                                          {safeNumberFormatter(userData.projects.reduce((sum, p) => sum + p.hours, 0))}
+                                        </td>
+                                      </tr>
+                                    </tbody>
+                                  </table>
+                                </Box>
+                              </td>
+                            </tr>
+                          )}
+                          
+                          {/* Se eliminó el calendario expandido */}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Box>
+            );
+          })}
+        </Box>
+      </Box>
+    );
+  };
   
   if (isLoading) {
     return (
@@ -646,97 +902,12 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
         </Grid>
       </Grid>
       
-      {/* Licencias por usuario por mes con desplegables */}
+      {/* Calendario de licencias */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6" gutterBottom>
-          Licencias por usuario por mes
+          Calendario de licencias
         </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Detalle de días de licencia y horas planificadas por usuario en cada mes
-        </Typography>
-        
-        {userMonthLeavesData.length === 0 ? (
-          <Box sx={{ p: 2, textAlign: 'center' }}>
-            <Typography>No hay datos de licencias para mostrar con los filtros seleccionados</Typography>
-          </Box>
-        ) : (
-          // Agrupar por usuario
-          Object.values(
-            userMonthLeavesData.reduce((acc: Record<string, any[]>, item) => {
-              if (!acc[item.user]) {
-                acc[item.user] = [];
-              }
-              acc[item.user].push(item);
-              return acc;
-            }, {})
-          ).map((userItems, userIndex) => (
-            <Box key={userIndex} sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
-                {userItems[0].user}
-              </Typography>
-              
-              <Grid container spacing={2}>
-                {userItems.map((item, itemIndex) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={itemIndex}>
-                    <Paper 
-                      sx={{ 
-                        p: 2, 
-                        height: '100%', 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        bgcolor: item.leaveDays > 0 ? 'rgba(136, 132, 216, 0.1)' : 'white'
-                      }}
-                      elevation={1}
-                    >
-                      <Typography variant="h6" sx={{ mb: 1, color: 'primary.main' }}>
-                        {item.formattedMonth}
-                      </Typography>
-                      
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Días de licencia:
-                        </Typography>
-                        <Typography variant="body1" fontWeight="bold">
-                          {item.leaveDays}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Horas planificadas:
-                        </Typography>
-                        <Typography variant="body1" fontWeight="bold">
-                          {safeNumberFormatter(item.reservedHours)}
-                        </Typography>
-                      </Box>
-                      
-                      {item.reservedHours > 0 && item.leaveDays > 0 && (
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            Hrs/día:
-                          </Typography>
-                          <Typography variant="body1" fontWeight="bold">
-                            {safeNumberFormatter(item.reservedHours / item.leaveDays)}
-                          </Typography>
-                        </Box>
-                      )}
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-              
-              {userIndex < Object.keys(userMonthLeavesData.reduce((acc: Record<string, any[]>, item) => {
-                if (!acc[item.user]) {
-                  acc[item.user] = [];
-                }
-                acc[item.user].push(item);
-                return acc;
-              }, {})).length - 1 && (
-                <Divider sx={{ my: 2 }} />
-              )}
-            </Box>
-          ))
-        )}
+        <LeavesCalendar filteredData={filteredData} />
       </Paper>
     </Box>
   );
