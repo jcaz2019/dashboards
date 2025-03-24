@@ -1,7 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Box, Typography, CircularProgress, Paper, Grid, FormControl,
-  InputLabel, Select, MenuItem, SelectChangeEvent, Divider, Chip, Button, Collapse, TableContainer, Table, TableHead, TableBody, TableRow, TableCell
+  InputLabel, Select, MenuItem, SelectChangeEvent, Divider, Chip, 
+  Button, Collapse, TableContainer, Table, TableHead, TableBody, 
+  TableRow, TableCell, TextField, Autocomplete, OutlinedInput, Checkbox,
+  ListItemText
 } from '@mui/material';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -78,9 +81,11 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
   // Estados para los filtros
   const [startMonth, setStartMonth] = useState<string>('');
   const [endMonth, setEndMonth] = useState<string>('');
-  const [selectedProject, setSelectedProject] = useState<string>('all');
-  const [selectedUser, setSelectedUser] = useState<string>('all');
+  const [selectedProjects, setSelectedProjects] = useState<string[]>(['all']);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>(['all']);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [userSearchTerm, setUserSearchTerm] = useState<string>('');
+  const [projectSearchTerm, setProjectSearchTerm] = useState<string>('');
   
   // Extraer meses, usuarios y proyectos únicos para los filtros
   const { months, users, projects } = useMemo(() => {
@@ -178,40 +183,57 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
   };
   
   // Manejadores para los filtros
-  const handleUserChange = (event: SelectChangeEvent) => {
-    setSelectedUser(event.target.value);
+  const handleUserChange = (event: SelectChangeEvent<typeof selectedUsers>) => {
+    const value = event.target.value;
+    const newSelectedUsers = typeof value === 'string' ? value.split(',') : value;
     
-    // Si se selecciona un usuario específico, filtrar los proyectos disponibles
-    if (event.target.value !== 'all') {
-      // Restablecer la selección de proyecto si no está disponible para este usuario
-      if (selectedProject !== 'all') {
-        const userProjects = leavesData
-          .filter(item => item.user_id.toString() === event.target.value)
-          .map(item => item.project_id);
-        
-        if (!userProjects.includes(parseInt(selectedProject))) {
-          setSelectedProject('all');
-        }
+    // Si selecciona "all", desmarcar las demás opciones
+    // Si deselecciona "all", mantener solo las selecciones específicas
+    if (newSelectedUsers.includes('all')) {
+      if (selectedUsers.includes('all')) {
+        // Si ya estaba seleccionado "all", quitar solo "all" y mantener el resto
+        setSelectedUsers(newSelectedUsers.filter(user => user !== 'all'));
+      } else {
+        // Si no estaba seleccionado "all", seleccionar solo "all"
+        setSelectedUsers(['all']);
       }
+    } else if (newSelectedUsers.length === 0) {
+      // Si no hay selecciones, establecer "all" por defecto
+      setSelectedUsers(['all']);
+    } else {
+      setSelectedUsers(newSelectedUsers);
     }
   };
   
-  const handleProjectChange = (event: SelectChangeEvent) => {
-    setSelectedProject(event.target.value);
+  const handleProjectChange = (event: SelectChangeEvent<typeof selectedProjects>) => {
+    const value = event.target.value;
+    const newSelectedProjects = typeof value === 'string' ? value.split(',') : value;
     
-    // Si se selecciona un proyecto específico, filtrar los usuarios disponibles
-    if (event.target.value !== 'all') {
-      // Restablecer la selección de usuario si no está disponible para este proyecto
-      if (selectedUser !== 'all') {
-        const projectUsers = leavesData
-          .filter(item => item.project_id.toString() === event.target.value)
-          .map(item => item.user_id.toString());
-        
-        if (!projectUsers.includes(selectedUser)) {
-          setSelectedUser('all');
-        }
+    // Si selecciona "all", desmarcar las demás opciones
+    // Si deselecciona "all", mantener solo las selecciones específicas
+    if (newSelectedProjects.includes('all')) {
+      if (selectedProjects.includes('all')) {
+        // Si ya estaba seleccionado "all", quitar solo "all" y mantener el resto
+        setSelectedProjects(newSelectedProjects.filter(project => project !== 'all'));
+      } else {
+        // Si no estaba seleccionado "all", seleccionar solo "all"
+        setSelectedProjects(['all']);
       }
+    } else if (newSelectedProjects.length === 0) {
+      // Si no hay selecciones, establecer "all" por defecto
+      setSelectedProjects(['all']);
+    } else {
+      setSelectedProjects(newSelectedProjects);
     }
+  };
+  
+  // Manejadores para los términos de búsqueda
+  const handleUserSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUserSearchTerm(event.target.value);
+  };
+  
+  const handleProjectSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setProjectSearchTerm(event.target.value);
   };
   
   // Manejadores para los filtros de rango de meses
@@ -238,15 +260,16 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
     }
   }, [months]);
   
-  // Filtrar proyectos disponibles basados en el usuario seleccionado
+  // Filtrar proyectos disponibles basados en los usuarios seleccionados
   const availableProjects = useMemo(() => {
-    if (selectedUser === 'all') {
+    // Si "all" está incluido, mostrar todos los proyectos
+    if (selectedUsers.includes('all')) {
       return projects;
     }
     
-    // Obtener los proyectos del usuario seleccionado
+    // Obtener los proyectos de los usuarios seleccionados
     const userProjects = leavesData
-      .filter(item => item.user_id.toString() === selectedUser)
+      .filter(item => selectedUsers.includes(item.user_id.toString()))
       .map(item => ({
         id: item.project_id,
         name: item.project_name || 'Sin proyecto'
@@ -256,17 +279,18 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
     return Array.from(
       new Map(userProjects.map(item => [item.id, item])).values()
     ).sort((a, b) => a.name.localeCompare(b.name));
-  }, [leavesData, selectedUser, projects]);
+  }, [leavesData, selectedUsers, projects]);
   
-  // Filtrar usuarios disponibles basados en el proyecto seleccionado
+  // Filtrar usuarios disponibles basados en los proyectos seleccionados
   const availableUsers = useMemo(() => {
-    if (selectedProject === 'all') {
+    // Si "all" está incluido, mostrar todos los usuarios
+    if (selectedProjects.includes('all')) {
       return users;
     }
     
-    // Obtener los usuarios del proyecto seleccionado
+    // Obtener los usuarios de los proyectos seleccionados
     const projectUsers = leavesData
-      .filter(item => item.project_id.toString() === selectedProject)
+      .filter(item => selectedProjects.includes(item.project_id.toString()))
       .map(item => ({
         id: item.user_id,
         name: item.user_name
@@ -276,20 +300,44 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
     return Array.from(
       new Map(projectUsers.map(item => [item.id, item])).values()
     ).sort((a, b) => a.name.localeCompare(b.name));
-  }, [leavesData, selectedProject, users]);
+  }, [leavesData, selectedProjects, users]);
+  
+  // Filtrar proyectos por término de búsqueda
+  const filteredProjects = useMemo(() => {
+    if (!projectSearchTerm) {
+      return availableProjects;
+    }
+    
+    const searchTermLower = projectSearchTerm.toLowerCase();
+    return availableProjects.filter(project => 
+      project.name.toLowerCase().includes(searchTermLower)
+    );
+  }, [availableProjects, projectSearchTerm]);
+  
+  // Filtrar usuarios por término de búsqueda
+  const filteredUsers = useMemo(() => {
+    if (!userSearchTerm) {
+      return availableUsers;
+    }
+    
+    const searchTermLower = userSearchTerm.toLowerCase();
+    return availableUsers.filter(user => 
+      user.name.toLowerCase().includes(searchTermLower)
+    );
+  }, [availableUsers, userSearchTerm]);
   
   // Filtrar datos según las selecciones
   const filteredData = useMemo(() => {
     let filtered = leavesData;
     
     // Aplicar filtro de usuario
-    if (selectedUser !== 'all') {
-      filtered = filtered.filter(item => item.user_id.toString() === selectedUser);
+    if (!selectedUsers.includes('all')) {
+      filtered = filtered.filter(item => selectedUsers.includes(item.user_id.toString()));
     }
     
     // Aplicar filtro de proyecto
-    if (selectedProject !== 'all') {
-      filtered = filtered.filter(item => item.project_id.toString() === selectedProject);
+    if (!selectedProjects.includes('all')) {
+      filtered = filtered.filter(item => selectedProjects.includes(item.project_id.toString()));
     }
     
     // Filtrar por rango de meses
@@ -323,7 +371,7 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
     });
     
     return filtered;
-  }, [leavesData, selectedUser, selectedProject, startMonth, endMonth]);
+  }, [leavesData, selectedUsers, selectedProjects, startMonth, endMonth]);
   
   // Procesar datos para los totalizadores
   const summaryData = useMemo(() => {
@@ -808,40 +856,224 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
             </FormControl>
           </Grid>
           
-          {/* Filtro de usuarios */}
+          {/* Filtro de usuarios con búsqueda */}
           <Grid item xs={12} md={6}>
             <FormControl fullWidth>
-              <InputLabel id="user-select-label">Usuario</InputLabel>
+              <InputLabel id="user-select-label">Usuarios</InputLabel>
               <Select
                 labelId="user-select-label"
-                value={selectedUser}
-                label="Usuario"
+                multiple
+                value={selectedUsers}
                 onChange={handleUserChange}
+                input={<OutlinedInput label="Usuarios" />}
+                renderValue={(selected) => {
+                  if (selected.includes('all')) return "Todos los usuarios";
+                  
+                  return selected.length === 1 
+                    ? `${users.find(u => u.id.toString() === selected[0])?.name || selected[0]}`
+                    : `${selected.length} usuarios seleccionados`;
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 400,
+                      width: 'auto',
+                      maxWidth: '80vw'
+                    }
+                  },
+                  // Evitar que se cierre al seleccionar un elemento
+                  autoFocus: false,
+                  disableAutoFocusItem: true
+                }}
               >
-                <MenuItem value="all">Todos los usuarios</MenuItem>
-                {availableUsers.map(user => (
+                {/* Campo de búsqueda dentro del menú desplegable */}
+                <Box 
+                  sx={{ 
+                    position: 'sticky', 
+                    top: 0, 
+                    bgcolor: 'background.paper', 
+                    zIndex: 1, 
+                    p: 1,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <Grid container spacing={1} alignItems="center">
+                    <Grid item xs>
+                      <TextField
+                        size="small"
+                        placeholder="Buscar usuarios..."
+                        fullWidth
+                        autoFocus
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          
+                          // Evitar que las teclas Escape cierren el menú
+                          if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setUserSearchTerm('');
+                          }
+                        }}
+                        onChange={handleUserSearchChange}
+                        value={userSearchTerm}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    {userSearchTerm && (
+                      <Grid item>
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setUserSearchTerm('');
+                          }}
+                        >
+                          Limpiar
+                        </Button>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Box>
+                <Divider />
+                
+                {/* Opción para seleccionar todos */}
+                <MenuItem 
+                  value="all" 
+                  divider 
+                  sx={{ 
+                    position: 'sticky', 
+                    top: userSearchTerm ? '72px' : '0', 
+                    bgcolor: 'background.paper',
+                    zIndex: 1,
+                    fontWeight: 'bold'
+                  }}
+                >
+                  <Checkbox checked={selectedUsers.includes('all')} />
+                  <ListItemText primary="Todos los usuarios" />
+                </MenuItem>
+                
+                {/* Lista de usuarios filtrada por búsqueda */}
+                {filteredUsers.map(user => (
                   <MenuItem key={user.id} value={user.id.toString()}>
-                    {user.name}
+                    <Checkbox checked={selectedUsers.includes(user.id.toString())} />
+                    <ListItemText primary={user.name} />
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
           </Grid>
           
-          {/* Filtro de proyectos */}
+          {/* Filtro de proyectos con búsqueda */}
           <Grid item xs={12} md={6}>
             <FormControl fullWidth>
-              <InputLabel id="project-select-label">Proyecto</InputLabel>
+              <InputLabel id="project-select-label">Proyectos</InputLabel>
               <Select
                 labelId="project-select-label"
-                value={selectedProject}
-                label="Proyecto"
+                multiple
+                value={selectedProjects}
                 onChange={handleProjectChange}
+                input={<OutlinedInput label="Proyectos" />}
+                renderValue={(selected) => {
+                  if (selected.includes('all')) return "Todos los proyectos";
+                  
+                  return selected.length === 1 
+                    ? `${projects.find(p => p.id.toString() === selected[0])?.name || selected[0]}`
+                    : `${selected.length} proyectos seleccionados`;
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    style: {
+                      maxHeight: 400,
+                      width: 'auto',
+                      maxWidth: '80vw'
+                    }
+                  },
+                  // Evitar que se cierre al seleccionar un elemento
+                  autoFocus: false,
+                  disableAutoFocusItem: true
+                }}
               >
-                <MenuItem value="all">Todos los proyectos</MenuItem>
-                {availableProjects.map(project => (
+                {/* Campo de búsqueda dentro del menú desplegable */}
+                <Box 
+                  sx={{ 
+                    position: 'sticky', 
+                    top: 0, 
+                    bgcolor: 'background.paper', 
+                    zIndex: 1, 
+                    p: 1,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  <Grid container spacing={1} alignItems="center">
+                    <Grid item xs>
+                      <TextField
+                        size="small"
+                        placeholder="Buscar proyectos..."
+                        fullWidth
+                        autoFocus
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          
+                          // Evitar que las teclas Escape cierren el menú
+                          if (e.key === 'Escape') {
+                            e.preventDefault();
+                            setProjectSearchTerm('');
+                          }
+                        }}
+                        onChange={handleProjectSearchChange}
+                        value={projectSearchTerm}
+                        variant="outlined"
+                      />
+                    </Grid>
+                    {projectSearchTerm && (
+                      <Grid item>
+                        <Button 
+                          size="small" 
+                          variant="outlined" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setProjectSearchTerm('');
+                          }}
+                        >
+                          Limpiar
+                        </Button>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Box>
+                <Divider />
+                
+                {/* Opción para seleccionar todos */}
+                <MenuItem 
+                  value="all" 
+                  divider 
+                  sx={{ 
+                    position: 'sticky', 
+                    top: projectSearchTerm ? '72px' : '0', 
+                    bgcolor: 'background.paper',
+                    zIndex: 1,
+                    fontWeight: 'bold'
+                  }}
+                >
+                  <Checkbox checked={selectedProjects.includes('all')} />
+                  <ListItemText primary="Todos los proyectos" />
+                </MenuItem>
+                
+                {/* Lista de proyectos filtrada por búsqueda */}
+                {filteredProjects.map(project => (
                   <MenuItem key={project.id} value={project.id.toString()}>
-                    {project.name}
+                    <Checkbox checked={selectedProjects.includes(project.id.toString())} />
+                    <ListItemText primary={project.name} />
                   </MenuItem>
                 ))}
               </Select>
@@ -865,22 +1097,40 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
               variant="outlined" 
             />
           )}
-          {selectedUser !== 'all' && (
-            <Chip 
-              label={`Usuario: ${users.find(u => u.id.toString() === selectedUser)?.name || selectedUser}`} 
-              color="secondary" 
-              variant="outlined" 
-              onDelete={() => setSelectedUser('all')}
-            />
-          )}
-          {selectedProject !== 'all' && (
-            <Chip 
-              label={`Proyecto: ${projects.find(p => p.id.toString() === selectedProject)?.name || selectedProject}`} 
-              color="success" 
-              variant="outlined" 
-              onDelete={() => setSelectedProject('all')}
-            />
-          )}
+          
+          {/* Chips para usuarios seleccionados */}
+          {!selectedUsers.includes('all') && selectedUsers.map(userId => {
+            const user = users.find(u => u.id.toString() === userId);
+            return (
+              <Chip 
+                key={userId}
+                label={`Usuario: ${user?.name || userId}`} 
+                color="secondary" 
+                variant="outlined" 
+                onDelete={() => {
+                  const newSelectedUsers = selectedUsers.filter(id => id !== userId);
+                  setSelectedUsers(newSelectedUsers.length ? newSelectedUsers : ['all']);
+                }}
+              />
+            );
+          })}
+          
+          {/* Chips para proyectos seleccionados */}
+          {!selectedProjects.includes('all') && selectedProjects.map(projectId => {
+            const project = projects.find(p => p.id.toString() === projectId);
+            return (
+              <Chip 
+                key={projectId}
+                label={`Proyecto: ${project?.name || projectId}`} 
+                color="success" 
+                variant="outlined" 
+                onDelete={() => {
+                  const newSelectedProjects = selectedProjects.filter(id => id !== projectId);
+                  setSelectedProjects(newSelectedProjects.length ? newSelectedProjects : ['all']);
+                }}
+              />
+            );
+          })}
         </Box>
       </Paper>
       
