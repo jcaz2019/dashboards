@@ -8,6 +8,7 @@ import TaskMetricsTable from './TaskMetricsTable';
 import CapacityUsageChart from './CapacityUsageChart';
 import LeavesChart from './LeavesChart';
 import LeavesChartV2 from './LeavesChartV2';
+import ProjectStatusDashboard from './ProjectStatusDashboard';
 import { fetchLeavesData } from '../services/api';
 import { LeaveData } from '../types/project';
 
@@ -89,7 +90,7 @@ const Dashboard: React.FC = () => {
 
   // Cargar datos de licencias cuando se selecciona la pestaña o cambia la compañía
   useEffect(() => {
-    if (tabValue === 4 || tabValue === 5) { // Si alguna pestaña de licencias está activa
+    if (tabValue === 5 || tabValue === 6) { // Si alguna pestaña de licencias está activa
       loadLeavesData(selectedCompany);
     }
   }, [tabValue, selectedCompany]);
@@ -110,6 +111,7 @@ const Dashboard: React.FC = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
           <Tab label="Projects" />
+          <Tab label="Project Status" />
           <Tab label="Capacity" />
           <Tab label="Task Metrics" />
           <Tab label="Capacity Usage" />
@@ -133,10 +135,24 @@ const Dashboard: React.FC = () => {
       </TabPanel>
       
       <TabPanel value={tabValue} index={1}>
-        <CapacityChart capacityData={capacityData} isLoading={isLoadingCapacity} />
+        <Paper elevation={2}>
+          <Box sx={{ p: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              Project Status Dashboard
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Visualización del estado de proyectos y distribución por cliente
+            </Typography>
+          </Box>
+          <ProjectStatusDashboard projects={projects} isLoading={isLoadingProjects} />
+        </Paper>
       </TabPanel>
       
       <TabPanel value={tabValue} index={2}>
+        <CapacityChart capacityData={capacityData} isLoading={isLoadingCapacity} />
+      </TabPanel>
+      
+      <TabPanel value={tabValue} index={3}>
         <Paper elevation={2}>
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -150,7 +166,7 @@ const Dashboard: React.FC = () => {
         </Paper>
       </TabPanel>
       
-      <TabPanel value={tabValue} index={3}>
+      <TabPanel value={tabValue} index={4}>
         <Paper elevation={2}>
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -164,7 +180,7 @@ const Dashboard: React.FC = () => {
         </Paper>
       </TabPanel>
       
-      <TabPanel value={tabValue} index={4}>
+      <TabPanel value={tabValue} index={5}>
         <Paper elevation={2}>
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
@@ -192,7 +208,7 @@ const Dashboard: React.FC = () => {
         </Paper>
       </TabPanel>
       
-      <TabPanel value={tabValue} index={5}>
+      <TabPanel value={tabValue} index={6}>
         <Paper elevation={2}>
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
