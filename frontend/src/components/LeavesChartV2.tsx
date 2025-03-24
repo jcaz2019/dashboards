@@ -603,11 +603,21 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
                         <button 
                           onClick={() => {
                             // Si hay al menos un proyecto expandido, colapsar todos
-                            if ([...expandedProjects].some(key => key.includes(`-${monthData.month}-projects`))) {
+                            let hasExpandedProject = false;
+                            expandedProjects.forEach(key => {
+                              if (key.includes(`-${monthData.month}-projects`)) {
+                                hasExpandedProject = true;
+                              }
+                            });
+                            
+                            if (hasExpandedProject) {
                               // Filtrar para quitar todos los proyectos de este mes
-                              const newExpandedProjects = new Set([...expandedProjects].filter(
-                                key => !key.includes(`-${monthData.month}-projects`)
-                              ));
+                              const newExpandedProjects = new Set<string>();
+                              expandedProjects.forEach(key => {
+                                if (!key.includes(`-${monthData.month}-projects`)) {
+                                  newExpandedProjects.add(key);
+                                }
+                              });
                               setExpandedProjects(newExpandedProjects);
                             } else {
                               // Si no hay ninguno expandido, expandir todos (comportamiento original)
@@ -623,7 +633,15 @@ const LeavesChartV2: React.FC<LeavesChartV2Props> = ({ leavesData, isLoading }) 
                             color: '#1976d2'
                           }}
                         >
-                          {[...expandedProjects].some(key => key.includes(`-${monthData.month}-projects`)) ? '−' : '+'}
+                          {(() => {
+                            let hasExpandedProject = false;
+                            expandedProjects.forEach(key => {
+                              if (key.includes(`-${monthData.month}-projects`)) {
+                                hasExpandedProject = true;
+                              }
+                            });
+                            return hasExpandedProject ? '−' : '+';
+                          })()}
                         </button>
                       </th>
                     </tr>
