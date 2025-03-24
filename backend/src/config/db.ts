@@ -69,8 +69,8 @@ export const schemas = {
   custom: getSchemaName('_custom_dashboards'),
   transform: getSchemaName('_transform'),
   
-  // Para uso futuro
-  dev: process.env.DBT_TARGET_SCHEMA === 'cor_bi_dev'
+  // Esquema dev usando la misma lógica de concatenación
+  dev: getSchemaName('_dev')
 };
 
 // Función de consulta con reintentos y monitoreo de tiempo

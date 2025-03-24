@@ -86,11 +86,11 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, isLoading }) =>
                 <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
                   <LinearProgress 
                     variant="determinate" 
-                    value={project.task_progress_percentage} 
+                    value={project.task_progress_percentage || 0} 
                     sx={{ width: '100%', mb: 1 }}
                   />
                   <Typography variant="caption">
-                    {project.task_progress_percentage.toFixed(0)}%
+                    {(project.task_progress_percentage || 0).toFixed(0)}%
                   </Typography>
                 </Box>
               </TableCell>
