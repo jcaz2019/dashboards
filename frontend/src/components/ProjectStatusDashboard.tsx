@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { 
-  Box, Typography, Paper, Grid, CircularProgress, Stack, Divider, Alert
+  Box, Typography, Paper, Grid, CircularProgress, Stack, Divider, Alert, 
+  TextField, Chip
 } from '@mui/material';
 import { 
   PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -93,15 +94,8 @@ const ProjectStatusDashboard: React.FC<ProjectStatusDashboardProps> = ({ project
   // Estados para los filtros de fecha de inicio
   const [startDateFrom, setStartDateFrom] = useState<string>('');
   const [startDateTo, setStartDateTo] = useState<string>('');
-  
-  // Estados para los filtros de fecha de finalización
-  const [endDateFrom, setEndDateFrom] = useState<string>('');
-  const [endDateTo, setEndDateTo] = useState<string>('');
-  
-  // Estado para controlar si se aplica el filtro de proyectos finalizados
-  const [filterFinishedOnly, setFilterFinishedOnly] = useState<boolean>(false);
-  
-  // Filtrar proyectos según las fechas seleccionadas
+
+  // Filtrar proyectos
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
       let includeProject = true;
@@ -110,67 +104,25 @@ const ProjectStatusDashboard: React.FC<ProjectStatusDashboardProps> = ({ project
       if (startDateFrom || startDateTo) {
         const projectStartDate = new Date(project.start_date);
         
-        // Validar que la fecha de inicio del proyecto sea válida
         if (!isNaN(projectStartDate.getTime())) {
-          // Aplicar filtro "desde" si está definido
           if (startDateFrom) {
             const filterStartDateFrom = new Date(startDateFrom);
             includeProject = includeProject && projectStartDate >= filterStartDateFrom;
           }
           
-          // Aplicar filtro "hasta" si está definido
           if (startDateTo) {
             const filterStartDateTo = new Date(startDateTo);
-            // Establecer la hora al final del día para inclusividad
             filterStartDateTo.setHours(23, 59, 59, 999);
             includeProject = includeProject && projectStartDate <= filterStartDateTo;
           }
         } else {
-          // Si la fecha de inicio del proyecto no es válida pero estamos filtrando por fecha de inicio,
-          // excluir el proyecto
-          includeProject = false;
-        }
-      }
-      
-      // Filtrar por fecha de finalización (solo aplica si se activa el filtro de proyectos finalizados)
-      if (filterFinishedOnly) {
-        // Primero verificar si el proyecto está finalizado
-        if (project.project_status === 'finished') {
-          // Solo aplicar filtros adicionales de fecha si se han seleccionado
-          if (endDateFrom || endDateTo) {
-            const projectEndDate = project.delivery_date 
-              ? new Date(project.delivery_date) 
-              : null;
-            
-            // Si no hay fecha de entrega o es inválida, excluir el proyecto
-            if (!projectEndDate || isNaN(projectEndDate.getTime())) {
-              includeProject = false;
-            } else {
-              // Aplicar filtro "desde" si está definido
-              if (endDateFrom) {
-                const filterEndDateFrom = new Date(endDateFrom);
-                includeProject = includeProject && projectEndDate >= filterEndDateFrom;
-              }
-              
-              // Aplicar filtro "hasta" si está definido
-              if (endDateTo) {
-                const filterEndDateTo = new Date(endDateTo);
-                // Establecer la hora al final del día para inclusividad
-                filterEndDateTo.setHours(23, 59, 59, 999);
-                includeProject = includeProject && projectEndDate <= filterEndDateTo;
-              }
-            }
-          }
-        } else {
-          // Si el proyecto no está finalizado y estamos filtrando por proyectos finalizados,
-          // excluirlo
           includeProject = false;
         }
       }
       
       return includeProject;
     });
-  }, [projects, startDateFrom, startDateTo, endDateFrom, endDateTo, filterFinishedOnly]);
+  }, [projects, startDateFrom, startDateTo]);
   
   // Procesar datos para el gráfico de pie (status)
   const statusData = useMemo(() => {
@@ -209,44 +161,21 @@ const ProjectStatusDashboard: React.FC<ProjectStatusDashboardProps> = ({ project
       .sort((a, b) => b.count - a.count); // Ordenar de mayor a menor
   }, [filteredProjects]);
   
-  // Función para manejar cambios en los filtros
-  const handleToggleFinishedFilter = () => {
-    setFilterFinishedOnly(!filterFinishedOnly);
-  };
-  
-  // Construir el mensaje de resumen de filtros
+  // Construir el mensaje de resumen de filtros (simplificado)
   const getFilterSummaryMessage = () => {
-    const parts = [];
-    
-    if (startDateFrom || startDateTo) {
-      let startDatePart = "proyectos iniciados";
-      if (startDateFrom) {
-        startDatePart += ` desde ${new Date(startDateFrom).toLocaleDateString()}`;
-      }
-      if (startDateTo) {
-        startDatePart += `${startDateFrom ? " y" : ""} hasta ${new Date(startDateTo).toLocaleDateString()}`;
-      }
-      parts.push(startDatePart);
-    }
-    
-    if (filterFinishedOnly) {
-      let endDatePart = "proyectos finalizados";
-      if (endDateFrom || endDateTo) {
-        if (endDateFrom) {
-          endDatePart += ` desde ${new Date(endDateFrom).toLocaleDateString()}`;
-        }
-        if (endDateTo) {
-          endDatePart += `${endDateFrom ? " y" : ""} hasta ${new Date(endDateTo).toLocaleDateString()}`;
-        }
-      }
-      parts.push(endDatePart);
-    }
-    
-    if (parts.length === 0) {
+    if (!startDateFrom && !startDateTo) {
       return null;
     }
     
-    return `Mostrando ${filteredProjects.length} de ${projects.length} proyectos (${parts.join("; ")})`;
+    let startDatePart = "proyectos iniciados";
+    if (startDateFrom) {
+      startDatePart += ` desde ${new Date(startDateFrom).toLocaleDateString()}`;
+    }
+    if (startDateTo) {
+      startDatePart += `${startDateFrom ? " y" : ""} hasta ${new Date(startDateTo).toLocaleDateString()}`;
+    }
+    
+    return `Mostrando ${filteredProjects.length} de ${projects.length} proyectos (${startDatePart})`;
   };
   
   if (isLoading) {
@@ -275,14 +204,9 @@ const ProjectStatusDashboard: React.FC<ProjectStatusDashboardProps> = ({ project
         startDateTo={startDateTo}
         onStartDateFromChange={setStartDateFrom}
         onStartDateToChange={setStartDateTo}
-        endDateFrom={endDateFrom}
-        endDateTo={endDateTo}
-        onEndDateFromChange={setEndDateFrom}
-        onEndDateToChange={setEndDateTo}
-        isEndDateFilterApplied={filterFinishedOnly}
-        onToggleEndDateFilter={handleToggleFinishedFilter}
+        showEndDateFilter={false}
         title="Filtrar Proyectos por Fechas"
-        description="Selecciona un rango de fechas para filtrar los proyectos. Puedes filtrar por fecha de inicio o activar el filtro de fecha de finalización para ver solo proyectos finalizados en un rango específico."
+        description="Selecciona un rango de fechas para filtrar los proyectos por su fecha de inicio."
       />
       
       {/* Mensaje de resultados de filtro */}
@@ -343,7 +267,7 @@ const ProjectStatusDashboard: React.FC<ProjectStatusDashboardProps> = ({ project
                           {filteredProjects.length}
                         </Typography>
                         <Typography variant="subtitle1" align="center">
-                          Proyectos {filterFinishedOnly ? 'Finalizados' : 'Totales'}
+                          Proyectos Totales
                         </Typography>
                       </Paper>
                     </Box>
