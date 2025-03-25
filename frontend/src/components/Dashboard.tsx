@@ -39,7 +39,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Dashboard: React.FC = () => {
-  const [selectedCompany, setSelectedCompany] = useState<number | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<number>(1659);
   const [tabValue, setTabValue] = useState(0);
   
   const { data: companies = [], isLoading: isLoadingCompanies } = useCompanies();
@@ -63,8 +63,9 @@ const Dashboard: React.FC = () => {
   const [leavesError, setLeavesError] = useState<string | null>(null);
   const [isLoadingLeaves, setIsLoadingLeaves] = useState<boolean>(false);
 
-  const projects = selectedCompany ? companyProjects : allProjects;
-  const isLoadingProjects = selectedCompany ? isLoadingCompanyProjects : isLoadingAllProjects;
+  // Siempre usamos los proyectos de la compañía seleccionada, ya que ahora siempre hay una compañía
+  const projects = companyProjects;
+  const isLoadingProjects = isLoadingCompanyProjects;
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);

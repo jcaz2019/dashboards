@@ -86,11 +86,13 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, isLoading }) =>
                 <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
                   <LinearProgress 
                     variant="determinate" 
-                    value={project.task_progress_percentage || 0} 
+                    value={typeof project.task_progress_percentage === 'number' ? project.task_progress_percentage : 0} 
                     sx={{ width: '100%', mb: 1 }}
                   />
                   <Typography variant="caption">
-                    {(project.task_progress_percentage || 0).toFixed(0)}%
+                    {typeof project.task_progress_percentage === 'number' 
+                      ? project.task_progress_percentage.toFixed(0) 
+                      : '0'}%
                   </Typography>
                 </Box>
               </TableCell>
@@ -104,13 +106,15 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, isLoading }) =>
                       color="success"
                     />
                     <Typography variant="caption">
-                      {project.hours_progress_percentage.toFixed(0)}%
+                      {typeof project.hours_progress_percentage === 'number' 
+                        ? project.hours_progress_percentage.toFixed(0) 
+                        : '0'}%
                     </Typography>
                   </Box>
                 ) : 'N/A'}
               </TableCell>
               <TableCell>
-                {project.margin_percentage !== null ? (
+                {project.margin_percentage !== null && typeof project.margin_percentage === 'number' ? (
                   <Typography 
                     variant="body2" 
                     color={project.margin_percentage >= 0 ? 'success.main' : 'error.main'}

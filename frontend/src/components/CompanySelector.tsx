@@ -4,8 +4,8 @@ import { Company } from '../types/project';
 
 interface CompanySelectorProps {
   companies: Company[];
-  selectedCompany: number | null;
-  onSelectCompany: (companyId: number | null) => void;
+  selectedCompany: number;
+  onSelectCompany: (companyId: number) => void;
   isLoading: boolean;
 }
 
@@ -17,7 +17,7 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({
 }) => {
   const handleChange = (event: SelectChangeEvent<string>) => {
     const value = event.target.value;
-    onSelectCompany(value === "" ? null : Number(value));
+    onSelectCompany(Number(value));
   };
 
   if (isLoading) {
@@ -35,11 +35,11 @@ const CompanySelector: React.FC<CompanySelectorProps> = ({
       <Select
         labelId="company-select-label"
         id="company-select"
-        value={selectedCompany !== null ? selectedCompany.toString() : ""}
+        value={selectedCompany.toString()}
         label="Company"
         onChange={handleChange}
+        required
       >
-        <MenuItem value="">All Companies</MenuItem>
         {companies.map((company) => (
           <MenuItem key={company.id} value={company.id.toString()}>
             {company.name}
