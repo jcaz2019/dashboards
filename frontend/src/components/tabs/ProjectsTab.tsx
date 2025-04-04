@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Paper, Typography, LinearProgress } from '@mui/material';
 import { useProjectsByCompany } from '../../hooks/useProjects';
 import ProjectsTable from '../ProjectsTable';
+import { Project } from '../../types/project';
 
 const ProjectsTab: React.FC = () => {
   // ID de compañía fijo para Projects
@@ -9,7 +10,7 @@ const ProjectsTab: React.FC = () => {
   
   // Cargar datos de proyectos
   const { 
-    data: projects = [], 
+    data: projects = [] as Project[], 
     isLoading,
     isFetching
   } = useProjectsByCompany(companyId);

@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Paper, Typography, Button, LinearProgress } from '@mui/material';
 import { useLeavesData } from '../../hooks/useProjects';
 import LeavesChartV2 from '../LeavesChartV2';
+import { LeaveData } from '../../types/project';
 
 const LeavesTab: React.FC = () => {
   // ID de compañía fijo para Leaves
@@ -9,7 +10,7 @@ const LeavesTab: React.FC = () => {
   
   // Cargar datos de licencias
   const {
-    data: leavesData = [],
+    data: leavesData = [] as LeaveData[],
     isLoading,
     isFetching,
     error,

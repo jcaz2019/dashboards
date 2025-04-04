@@ -5,6 +5,7 @@ import { Container, Box, Typography, Tabs, Tab, Paper, CircularProgress, LinearP
 const ProjectsTab = lazy(() => import('./tabs/ProjectsTab'));
 const LeavesTab = lazy(() => import('./tabs/LeavesTab'));
 
+// Componente para el contenido de las pestañas
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -12,27 +13,6 @@ interface TabPanelProps {
 }
 
 function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ p: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
-// Componente para el contenido de las pestañas
-function TabPanel(props: { children?: React.ReactNode; index: number; value: number }) {
   const { children, value, index, ...other } = props;
   return (
     <div
