@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Box, Typography, Tabs, Tab, Paper, Button } from '@mui/material';
-import { useAllProjects, useProjectsByCompany, useCompanies } from '../hooks/useProjects';
+import { useProjectsByCompany } from '../hooks/useProjects';
 import ProjectsTable from './ProjectsTable';
-import CompanySelector from './CompanySelector';
 import LeavesChartV2 from './LeavesChartV2';
 import { fetchLeavesData } from '../services/api';
 import { LeaveData } from '../types/project';
@@ -34,22 +33,25 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Dashboard: React.FC = () => {
-  const [selectedCompany, setSelectedCompany] = useState<number>(1659);
   const [tabValue, setTabValue] = useState(0);
   
-  const { data: companies = [], isLoading: isLoadingCompanies } = useCompanies();
-  const { data: allProjects = [], isLoading: isLoadingAllProjects } = useAllProjects();
+  // Usar company_id=1659 por defecto, pero 4195 para el tab de leaves
+  const defaultCompanyId = 1659;
+  const leavesCompanyId = 4195;
+  const selectedCompany = tabValue === 1 ? leavesCompanyId : defaultCompanyId;
+  
+  // No necesitamos useAllProjects ya que siempre usaremos una compañía específica
   const { 
     data: companyProjects = [], 
     isLoading: isLoadingCompanyProjects 
-  } = useProjectsByCompany(selectedCompany || 0);
+  } = useProjectsByCompany(selectedCompany);
   
   // Añadir el hook para los datos de licencias
   const [leavesData, setLeavesData] = useState<LeaveData[]>([]);
   const [leavesError, setLeavesError] = useState<string | null>(null);
   const [isLoadingLeaves, setIsLoadingLeaves] = useState<boolean>(false);
 
-  // Siempre usamos los proyectos de la compañía seleccionada, ya que ahora siempre hay una compañía
+  // Siempre usamos los proyectos de la compañía seleccionada
   const projects = companyProjects;
   const isLoadingProjects = isLoadingCompanyProjects;
 
@@ -77,23 +79,16 @@ const Dashboard: React.FC = () => {
 
   // Cargar datos de licencias cuando se selecciona la pestaña o cambia la compañía
   useEffect(() => {
-    if (tabValue === 1) { // Si la pestaña de licencias está activa (nuevo índice después de eliminar tabs)
-      loadLeavesData(selectedCompany);
+    if (tabValue === 1) { // Si la pestaña de licencias está activa (índice 1)
+      loadLeavesData(leavesCompanyId);
     }
-  }, [tabValue, selectedCompany]);
+  }, [tabValue]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Project Dashboard
+        My Dashboards
       </Typography>
-      
-      <CompanySelector
-        companies={companies}
-        selectedCompany={selectedCompany}
-        onSelectCompany={setSelectedCompany}
-        isLoading={isLoadingCompanies}
-      />
       
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
@@ -132,7 +127,7 @@ const Dashboard: React.FC = () => {
               <Button 
                 variant="contained" 
                 color="primary" 
-                onClick={() => loadLeavesData(selectedCompany)} 
+                onClick={() => loadLeavesData(leavesCompanyId)} 
                 sx={{ mt: 2 }}
               >
                 Reintentar

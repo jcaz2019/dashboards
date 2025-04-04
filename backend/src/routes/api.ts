@@ -113,8 +113,8 @@ router.get('/hello', (req: Request, res: Response) => {
 // Endpoint para obtener datos de licencias y horas planificadas
 router.get('/leaves', async (req: Request, res: Response) => {
   try {
-    // Temporalmente, usar siempre la compañía 4195
-    const companyId = 4195; // Hardcodeado temporalmente
+    // Siempre usar la compañía 4195 para el endpoint de licencias
+    const companyId = 4195; // Hardcodeado permanentemente
     
     // Usar directamente la tabla correcta
     const viewName = 'llyc_leaves_main_query_view';
