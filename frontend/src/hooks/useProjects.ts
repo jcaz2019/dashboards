@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAllProjects, fetchProjectsByCompany, fetchCompanies, fetchCapacityData, fetchTaskMetrics, fetchLeavesData } from '../services/api';
+import { fetchAllProjects, fetchProjectsByCompany, fetchCompanies, fetchLeavesData } from '../services/api';
 
 export const useAllProjects = () => {
   return useQuery({
@@ -23,22 +23,6 @@ export const useCompanies = () => {
     queryKey: ['companies'],
     queryFn: fetchCompanies,
     staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
-export const useCapacityData = (companyId?: number) => {
-  return useQuery({
-    queryKey: ['capacity', companyId],
-    queryFn: () => fetchCapacityData(companyId),
-    staleTime: 5 * 60 * 1000,
-  });
-};
-
-export const useTaskMetrics = (companyId?: number) => {
-  return useQuery({
-    queryKey: ['tasks', companyId],
-    queryFn: () => fetchTaskMetrics(companyId),
-    staleTime: 5 * 60 * 1000,
   });
 };
 

@@ -1,15 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Box, Typography, Tabs, Tab, Paper, Button } from '@mui/material';
-import { useAllProjects, useProjectsByCompany, useCompanies, useCapacityData, useTaskMetrics } from '../hooks/useProjects';
+import { useAllProjects, useProjectsByCompany, useCompanies } from '../hooks/useProjects';
 import ProjectsTable from './ProjectsTable';
-import CapacityChart from './CapacityChart';
 import CompanySelector from './CompanySelector';
-import TaskMetricsTable from './TaskMetricsTable';
-import CapacityUsageChart from './CapacityUsageChart';
-import LeavesChart from './LeavesChart';
 import LeavesChartV2 from './LeavesChartV2';
-import ProjectStatusDashboard from './ProjectStatusDashboard';
-import ProjectsMetrics from './ProjectsMetrics';
 import { fetchLeavesData } from '../services/api';
 import { LeaveData } from '../types/project';
 
@@ -50,15 +44,6 @@ const Dashboard: React.FC = () => {
     isLoading: isLoadingCompanyProjects 
   } = useProjectsByCompany(selectedCompany || 0);
   
-  const { data: capacityData = [], isLoading: isLoadingCapacity } = useCapacityData(
-    selectedCompany !== null ? selectedCompany : undefined
-  );
-  
-  // Añadir el hook para las métricas de tareas
-  const { data: taskMetrics = [], isLoading: isLoadingTaskMetrics } = useTaskMetrics(
-    selectedCompany !== null ? selectedCompany : undefined
-  );
-
   // Añadir el hook para los datos de licencias
   const [leavesData, setLeavesData] = useState<LeaveData[]>([]);
   const [leavesError, setLeavesError] = useState<string | null>(null);
@@ -92,7 +77,7 @@ const Dashboard: React.FC = () => {
 
   // Cargar datos de licencias cuando se selecciona la pestaña o cambia la compañía
   useEffect(() => {
-    if (tabValue === 6 || tabValue === 7) { // Si alguna pestaña de licencias está activa
+    if (tabValue === 1) { // Si la pestaña de licencias está activa (nuevo índice después de eliminar tabs)
       loadLeavesData(selectedCompany);
     }
   }, [tabValue, selectedCompany]);
@@ -113,13 +98,7 @@ const Dashboard: React.FC = () => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
           <Tab label="Projects" />
-          <Tab label="Project Status" />
-          <Tab label="Projects Metrics" />
-          <Tab label="Capacity" />
-          <Tab label="Task Metrics" />
-          <Tab label="Capacity Usage" />
           <Tab label="Leaves" />
-          <Tab label="Leaves V2" />
         </Tabs>
       </Box>
       
@@ -141,98 +120,10 @@ const Dashboard: React.FC = () => {
         <Paper elevation={2}>
           <Box sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Project Status Dashboard
+              Licencias
             </Typography>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Visualización del estado de proyectos y distribución por cliente
-            </Typography>
-          </Box>
-          <ProjectStatusDashboard projects={projects} isLoading={isLoadingProjects} />
-        </Paper>
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={2}>
-        <Paper elevation={2}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Projects Metrics
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Detailed metrics by client and project with collapsible view
-            </Typography>
-          </Box>
-          <ProjectsMetrics projects={projects} isLoading={isLoadingProjects} />
-        </Paper>
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={3}>
-        <CapacityChart capacityData={capacityData} isLoading={isLoadingCapacity} />
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={4}>
-        <Paper elevation={2}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Task Metrics
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Detailed information about tasks from dbt models
-            </Typography>
-          </Box>
-          <TaskMetricsTable tasks={taskMetrics} isLoading={isLoadingTaskMetrics} />
-        </Paper>
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={5}>
-        <Paper elevation={2}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Capacity Usage Breakdown
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Percentage of gross capacity used per project, grouped by area, position, and user
-            </Typography>
-          </Box>
-          <CapacityUsageChart tasks={taskMetrics} isLoading={isLoadingTaskMetrics} />
-        </Paper>
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={6}>
-        <Paper elevation={2}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Licencias y Horas Planificadas
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Análisis de horas planificadas para usuarios con licencias
-            </Typography>
-          </Box>
-          {leavesError ? (
-            <Paper sx={{ p: 2, mb: 2, textAlign: 'center', color: 'error.main' }}>
-              <Typography variant="h6">{leavesError}</Typography>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={() => loadLeavesData(selectedCompany)} 
-                sx={{ mt: 2 }}
-              >
-                Reintentar
-              </Button>
-            </Paper>
-          ) : (
-            <LeavesChart leavesData={leavesData} isLoading={isLoadingLeaves} />
-          )}
-        </Paper>
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={7}>
-        <Paper elevation={2}>
-          <Box sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Licencias V2 - Visualización Simplificada
-            </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Análisis de licencias con filtros mejorados y visualización optimizada
+              Análisis de licencias con filtros y visualización optimizada
             </Typography>
           </Box>
           {leavesError ? (
