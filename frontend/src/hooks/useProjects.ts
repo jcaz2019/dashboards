@@ -13,11 +13,13 @@ export const useProjectsByCompany = (companyId: number, options = {}) => {
   return useQuery({
     queryKey: ['projects', companyId],
     queryFn: () => fetchProjectsByCompany(companyId),
-    staleTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: Infinity, // No considerar los datos como obsoletos automáticamente
     gcTime: 30 * 60 * 1000, // 30 minutos (antes cacheTime)
     enabled: !!companyId,
     refetchOnWindowFocus: false, // No recargar al enfocar la ventana
     refetchOnMount: false, // No recargar al montar el componente si hay datos en caché
+    retry: 1, // Solo reintentar una vez en caso de error
+    networkMode: 'offlineFirst', // Usar datos en caché primero si están disponibles
     ...options
   });
 };
@@ -34,10 +36,12 @@ export const useLeavesData = (companyId?: number, options = {}) => {
   return useQuery({
     queryKey: ['leaves', companyId],
     queryFn: () => fetchLeavesData(companyId),
-    staleTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: Infinity, // No considerar los datos como obsoletos automáticamente
     gcTime: 30 * 60 * 1000, // 30 minutos (antes cacheTime)
     refetchOnWindowFocus: false, // No recargar al enfocar la ventana
     refetchOnMount: false, // No recargar al montar el componente si hay datos en caché
+    retry: 1, // Solo reintentar una vez en caso de error
+    networkMode: 'offlineFirst', // Usar datos en caché primero si están disponibles
     ...options
   });
 };

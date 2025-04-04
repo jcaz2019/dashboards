@@ -51,20 +51,26 @@ const Dashboard: React.FC = () => {
         </Tabs>
       </Box>
       
-      {/* Usar Suspense para manejar la carga de componentes */}
-      <Suspense fallback={
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-          <CircularProgress />
-        </Box>
-      }>
-        <TabPanel value={tabValue} index={0}>
-          {tabValue === 0 && <ProjectsTab />}
-        </TabPanel>
-        
-        <TabPanel value={tabValue} index={1}>
-          {tabValue === 1 && <LeavesTab />}
-        </TabPanel>
-      </Suspense>
+      {/* Prerenderizar ambos tabs pero mantener oculto el que no está activo */}
+      <TabPanel value={tabValue} index={0}>
+        <Suspense fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        }>
+          <ProjectsTab />
+        </Suspense>
+      </TabPanel>
+      
+      <TabPanel value={tabValue} index={1}>
+        <Suspense fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <CircularProgress />
+          </Box>
+        }>
+          <LeavesTab />
+        </Suspense>
+      </TabPanel>
     </Container>
   );
 };

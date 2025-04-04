@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Button, LinearProgress } from '@mui/material';
+import SkeletonLoader from '../SkeletonLoader';
 import { useLeavesData } from '../../hooks/useProjects';
 import LeavesChartV2 from '../LeavesChartV2';
 import { LeaveData } from '../../types/project';
@@ -7,6 +8,17 @@ import { LeaveData } from '../../types/project';
 const LeavesTab: React.FC = () => {
   // ID de compañía fijo para Leaves
   const companyId = 4195;
+  const [isVisible, setIsVisible] = useState(false);
+  
+  // Retrasar la carga para permitir la renderización de la interfaz primero
+  useEffect(() => {
+    // Usar setTimeout para permitir que la UI se pinte antes de la carga pesada
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Cargar datos de licencias
   const {
@@ -15,7 +27,11 @@ const LeavesTab: React.FC = () => {
     isFetching,
     error,
     refetch
-  } = useLeavesData(companyId);
+  } = useLeavesData(companyId, {
+    // Solo habilitar la carga después de que el componente sea visible
+    enabled: isVisible,
+    suspense: false
+  });
 
   return (
     <Paper elevation={2} sx={{ position: 'relative' }}>
@@ -54,8 +70,12 @@ const LeavesTab: React.FC = () => {
             Reintentar
           </Button>
         </Paper>
+      ) : !isVisible || isLoading ? (
+        <Box sx={{ p: 2 }}>
+          <SkeletonLoader type="leaves" />
+        </Box>
       ) : (
-        <LeavesChartV2 leavesData={leavesData} isLoading={isLoading} />
+        <LeavesChartV2 leavesData={leavesData} isLoading={false} />
       )}
     </Paper>
   );
