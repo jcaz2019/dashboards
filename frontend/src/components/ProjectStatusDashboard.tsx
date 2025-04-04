@@ -204,7 +204,12 @@ const ProjectStatusDashboard: React.FC<ProjectStatusDashboardProps> = ({ project
         startDateTo={startDateTo}
         onStartDateFromChange={setStartDateFrom}
         onStartDateToChange={setStartDateTo}
-        showEndDateFilter={false}
+        isEndDateFilterApplied={false}
+        onToggleEndDateFilter={() => {}}
+        endDateFrom=""
+        endDateTo=""
+        onEndDateFromChange={() => {}}
+        onEndDateToChange={() => {}}
         title="Filtrar Proyectos por Fechas"
         description="Selecciona un rango de fechas para filtrar los proyectos por su fecha de inicio."
       />
