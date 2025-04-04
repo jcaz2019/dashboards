@@ -1,9 +1,8 @@
-import React, { useState, lazy, Suspense } from 'react';
-import { Container, Box, Typography, Tabs, Tab, Paper, CircularProgress, LinearProgress } from '@mui/material';
-
-// Cargar componentes de pestañas de forma diferida
-const ProjectsTab = lazy(() => import('./tabs/ProjectsTab'));
-const LeavesTab = lazy(() => import('./tabs/LeavesTab'));
+import React, { useState, memo } from 'react';
+import { Container, Box, Typography, Tabs, Tab } from '@mui/material';
+import { DashboardProvider } from '../context/DashboardContext';
+import ProjectsTabNew from './tabs/ProjectsTabNew';
+import LeavesTabNew from './tabs/LeavesTabNew';
 
 // Componente para el contenido de las pestañas
 interface TabPanelProps {
@@ -31,6 +30,10 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+// Memoize the tab contents to prevent unnecessary re-renders
+const MemoizedProjectsTab = memo(ProjectsTabNew);
+const MemoizedLeavesTab = memo(LeavesTabNew);
+
 const Dashboard: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
 
@@ -39,39 +42,29 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        My Dashboards
-      </Typography>
-      
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
-          <Tab label="Projects" />
-          <Tab label="Leaves" />
-        </Tabs>
-      </Box>
-      
-      {/* Prerenderizar ambos tabs pero mantener oculto el que no está activo */}
-      <TabPanel value={tabValue} index={0}>
-        <Suspense fallback={
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        }>
-          <ProjectsTab />
-        </Suspense>
-      </TabPanel>
-      
-      <TabPanel value={tabValue} index={1}>
-        <Suspense fallback={
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-            <CircularProgress />
-          </Box>
-        }>
-          <LeavesTab />
-        </Suspense>
-      </TabPanel>
-    </Container>
+    <DashboardProvider>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          My Dashboards
+        </Typography>
+        
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
+            <Tab label="Projects" />
+            <Tab label="Leaves" />
+          </Tabs>
+        </Box>
+        
+        {/* Renderizamos ambas pestañas pero ocultamos la que no está activa */}
+        <Box sx={{ display: tabValue === 0 ? 'block' : 'none', p: 3 }}>
+          <MemoizedProjectsTab />
+        </Box>
+        
+        <Box sx={{ display: tabValue === 1 ? 'block' : 'none', p: 3 }}>
+          <MemoizedLeavesTab />
+        </Box>
+      </Container>
+    </DashboardProvider>
   );
 };
 
