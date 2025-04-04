@@ -1,11 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Box, Paper, Typography, Button, LinearProgress } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import LeavesChartV2 from '../LeavesChartV2';
 import SkeletonLoader from '../SkeletonLoader';
 import { useDashboardContext } from '../../context/DashboardContext';
 
 const LeavesTabNew: React.FC = () => {
-  const { leavesData, isLoadingLeaves, refreshLeaves } = useDashboardContext();
+  const { 
+    leavesData, 
+    isLoadingLeaves, 
+    refreshLeaves, 
+    loadLeaves, 
+    leavesLoaded 
+  } = useDashboardContext();
+  
+  // Cargar datos al montar el componente si no están cargados
+  useEffect(() => {
+    if (!leavesLoaded && !isLoadingLeaves) {
+      loadLeaves();
+    }
+  }, [leavesLoaded, isLoadingLeaves, loadLeaves]);
   
   return (
     <Paper elevation={2} sx={{ position: 'relative' }}>
@@ -21,16 +35,28 @@ const LeavesTabNew: React.FC = () => {
         />
       )}
       
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Licencias
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Análisis de licencias con filtros y visualización optimizada
-        </Typography>
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Licencias
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Análisis de licencias con filtros y visualización optimizada
+          </Typography>
+        </Box>
+        
+        {/* Botón de refresco */}
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => refreshLeaves()}
+          disabled={isLoadingLeaves}
+        >
+          Refresh
+        </Button>
       </Box>
       
-      {isLoadingLeaves && leavesData.length === 0 ? (
+      {isLoadingLeaves || (!leavesLoaded && leavesData.length === 0) ? (
         <Box sx={{ p: 2 }}>
           <SkeletonLoader type="leaves" />
         </Box>

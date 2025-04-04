@@ -4,16 +4,25 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Disable React StrictMode in production to prevent double-rendering
+// which can affect performance with large datasets
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+
+if (process.env.NODE_ENV === 'production') {
+  // Optimize performance in production
+  root.render(<App />);
+} else {
+  // Use StrictMode in development for better debugging
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+reportWebVitals(console.log); // Enable performance logging

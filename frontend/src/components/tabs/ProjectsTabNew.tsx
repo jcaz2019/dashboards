@@ -1,11 +1,25 @@
-import React from 'react';
-import { Box, Paper, Typography, LinearProgress } from '@mui/material';
+import React, { useEffect } from 'react';
+import { Box, Paper, Typography, LinearProgress, Button } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import ProjectsTable from '../ProjectsTable';
 import SkeletonLoader from '../SkeletonLoader';
 import { useDashboardContext } from '../../context/DashboardContext';
 
 const ProjectsTabNew: React.FC = () => {
-  const { projectsData, isLoadingProjects, refreshProjects } = useDashboardContext();
+  const { 
+    projectsData, 
+    isLoadingProjects, 
+    refreshProjects, 
+    loadProjects, 
+    projectsLoaded 
+  } = useDashboardContext();
+
+  // Cargar datos al montar el componente si no están cargados
+  useEffect(() => {
+    if (!projectsLoaded && !isLoadingProjects) {
+      loadProjects();
+    }
+  }, [projectsLoaded, isLoadingProjects, loadProjects]);
 
   return (
     <Paper elevation={2} sx={{ position: 'relative' }}>
@@ -21,17 +35,29 @@ const ProjectsTabNew: React.FC = () => {
         />
       )}
       
-      <Box sx={{ p: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Projects Overview
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Detailed information about all projects
-        </Typography>
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Projects Overview
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Detailed information about all projects
+          </Typography>
+        </Box>
+        
+        {/* Botón de refresco */}
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => refreshProjects()}
+          disabled={isLoadingProjects}
+        >
+          Refresh
+        </Button>
       </Box>
       
       {/* Siempre mostrar algo, incluso durante la carga */}
-      {isLoadingProjects ? (
+      {isLoadingProjects || !projectsLoaded ? (
         <Box sx={{ px: 2, pb: 2 }}>
           <SkeletonLoader type="table" rows={8} />
         </Box>
