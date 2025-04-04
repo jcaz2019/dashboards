@@ -9,12 +9,13 @@ export const useAllProjects = () => {
   });
 };
 
-export const useProjectsByCompany = (companyId: number) => {
+export const useProjectsByCompany = (companyId: number, options = {}) => {
   return useQuery({
     queryKey: ['projects', companyId],
     queryFn: () => fetchProjectsByCompany(companyId),
     staleTime: 5 * 60 * 1000,
     enabled: !!companyId,
+    ...options
   });
 };
 
@@ -26,10 +27,11 @@ export const useCompanies = () => {
   });
 };
 
-export const useLeavesData = (companyId?: number) => {
+export const useLeavesData = (companyId?: number, options = {}) => {
   return useQuery({
     queryKey: ['leaves', companyId],
     queryFn: () => fetchLeavesData(companyId),
     staleTime: 5 * 60 * 1000,
+    ...options
   });
 };

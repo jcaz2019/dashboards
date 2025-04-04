@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Box, Typography, Tabs, Tab, Paper, Button } from '@mui/material';
-import { useProjectsByCompany } from '../hooks/useProjects';
+import React, { useState, lazy, Suspense } from 'react';
+import { Container, Box, Typography, Tabs, Tab, Paper, Button, CircularProgress, LinearProgress } from '@mui/material';
+import { useProjectsByCompany, useLeavesData } from '../hooks/useProjects';
 import ProjectsTable from './ProjectsTable';
 import LeavesChartV2 from './LeavesChartV2';
-import { fetchLeavesData } from '../services/api';
 import { LeaveData } from '../types/project';
 
 interface TabPanelProps {
@@ -35,56 +34,37 @@ function TabPanel(props: TabPanelProps) {
 const Dashboard: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   
-  // Usar company_id=1659 por defecto, pero 4195 para el tab de leaves
+  // IDs de compañía
   const defaultCompanyId = 1659;
   const leavesCompanyId = 4195;
-  const selectedCompany = React.useMemo(() => {
-    return tabValue === 1 ? leavesCompanyId : defaultCompanyId;
-  }, [tabValue]);
   
-  // No necesitamos useAllProjects ya que siempre usaremos una compañía específica
+  // Cargar datos de proyectos solo si estamos en la pestaña "Projects"
   const { 
     data: companyProjects = [], 
     isLoading: isLoadingCompanyProjects 
-  } = useProjectsByCompany(selectedCompany);
+  } = useProjectsByCompany(defaultCompanyId, {
+    enabled: tabValue === 0, // Solo cargar si estamos en la primera pestaña
+    keepPreviousData: true, // Mantener datos anteriores mientras se cargan nuevos
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    cacheTime: 10 * 60 * 1000 // 10 minutos
+  });
   
-  // Añadir el hook para los datos de licencias
-  const [leavesData, setLeavesData] = useState<LeaveData[]>([]);
-  const [leavesError, setLeavesError] = useState<string | null>(null);
-  const [isLoadingLeaves, setIsLoadingLeaves] = useState<boolean>(false);
-
-  // Siempre usamos los proyectos de la compañía seleccionada
-  const projects = companyProjects;
-  const isLoadingProjects = isLoadingCompanyProjects;
+  // Usar el hook para cargar datos de licencias solo si estamos en la pestaña "Leaves"
+  const {
+    data: leavesData = [],
+    isLoading: isLoadingLeaves,
+    error: leavesError,
+    refetch: refetchLeaves
+  } = useLeavesData(leavesCompanyId, {
+    enabled: tabValue === 1, // Solo cargar si estamos en la segunda pestaña
+    keepPreviousData: true, // Mantener datos anteriores mientras se cargan nuevos
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    cacheTime: 10 * 60 * 1000 // 10 minutos
+  });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
-
-  // Función para cargar los datos de licencias
-  const loadLeavesData = async (companyId?: number | null) => {
-    setIsLoadingLeaves(true);
-    setLeavesError(null);
-    
-    try {
-      // Convertir null a undefined para que coincida con el tipo esperado
-      const data = await fetchLeavesData(companyId === null ? undefined : companyId);
-      setLeavesData(data);
-    } catch (error: any) {
-      console.error('Error loading leaves data:', error);
-      setLeavesError('No se pudieron cargar los datos de licencias. Por favor, intente nuevamente más tarde.');
-      setLeavesData([]);
-    } finally {
-      setIsLoadingLeaves(false);
-    }
-  };
-
-  // Cargar datos de licencias cuando se selecciona la pestaña o cambia la compañía
-  useEffect(() => {
-    if (tabValue === 1) { // Si la pestaña de licencias está activa (índice 1)
-      loadLeavesData(leavesCompanyId);
-    }
-  }, [tabValue]);
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -92,11 +72,24 @@ const Dashboard: React.FC = () => {
         My Dashboards
       </Typography>
       
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', position: 'relative' }}>
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="dashboard tabs">
           <Tab label="Projects" />
           <Tab label="Leaves" />
         </Tabs>
+        {/* Indicador de carga en pestañas */}
+        {((tabValue === 0 && isLoadingCompanyProjects) || 
+          (tabValue === 1 && isLoadingLeaves)) && (
+          <Box sx={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            height: '3px' 
+          }}>
+            <LinearProgress color="secondary" />
+          </Box>
+        )}
       </Box>
       
       <TabPanel value={tabValue} index={0}>
@@ -109,7 +102,7 @@ const Dashboard: React.FC = () => {
               Detailed information about all projects
             </Typography>
           </Box>
-          <ProjectsTable projects={projects} isLoading={isLoadingProjects} />
+          <ProjectsTable projects={companyProjects} isLoading={isLoadingCompanyProjects} />
         </Paper>
       </TabPanel>
       
@@ -125,11 +118,13 @@ const Dashboard: React.FC = () => {
           </Box>
           {leavesError ? (
             <Paper sx={{ p: 2, mb: 2, textAlign: 'center', color: 'error.main' }}>
-              <Typography variant="h6">{leavesError}</Typography>
+              <Typography variant="h6">
+                Error al cargar datos de licencias
+              </Typography>
               <Button 
                 variant="contained" 
                 color="primary" 
-                onClick={() => loadLeavesData(leavesCompanyId)} 
+                onClick={() => refetchLeaves()} 
                 sx={{ mt: 2 }}
               >
                 Reintentar
