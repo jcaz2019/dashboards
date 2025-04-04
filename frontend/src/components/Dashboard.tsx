@@ -38,7 +38,9 @@ const Dashboard: React.FC = () => {
   // Usar company_id=1659 por defecto, pero 4195 para el tab de leaves
   const defaultCompanyId = 1659;
   const leavesCompanyId = 4195;
-  const selectedCompany = tabValue === 1 ? leavesCompanyId : defaultCompanyId;
+  const selectedCompany = React.useMemo(() => {
+    return tabValue === 1 ? leavesCompanyId : defaultCompanyId;
+  }, [tabValue]);
   
   // No necesitamos useAllProjects ya que siempre usaremos una compañía específica
   const { 
